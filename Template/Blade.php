@@ -23,7 +23,7 @@ use Illuminate\View\ViewFinderInterface;
  */
 class Blade
 {
-    /** @var Factory */
+    /** @var FactoryContract */
     protected $env;
 
     public function __construct(FactoryContract $env)
