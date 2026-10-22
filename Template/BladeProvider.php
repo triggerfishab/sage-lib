@@ -18,13 +18,13 @@ class BladeProvider extends ViewServiceProvider
      * @param array             $config
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
-    public function __construct(ContainerContract $container = null, $config = [])
+    public function __construct(?ContainerContract $container = null, $config = [])
     {
         /** @noinspection PhpParamsInspection */
         parent::__construct($container ?: Container::getInstance());
 
         $this->app->bindIf('config', function () use ($config) {
-            return $config;
+            return new \Roots\Sage\Config($config);
         }, true);
     }
 
@@ -40,6 +40,36 @@ class BladeProvider extends ViewServiceProvider
         $this->registerFactory();
         $this->registerBladeCompiler();
         return $this;
+    }
+
+    /**
+     * Register the view factory without Laravel application lifecycle hooks.
+     */
+    public function registerFactory()
+    {
+        $this->app->singleton('view', function ($app) {
+            $factory = $this->createFactory(
+                $app['view.engine.resolver'],
+                $app['view.finder'],
+                $app['events']
+            );
+            $factory->setContainer($app);
+            $factory->share('app', $app);
+            return $factory;
+        });
+    }
+
+    /**
+     * WordPress handles the request lifecycle; there is no Laravel terminating hook.
+     */
+    public function registerBladeEngine($resolver)
+    {
+        $resolver->register('blade', function () {
+            return new \Illuminate\View\Engines\CompilerEngine(
+                $this->app->make('blade.compiler'),
+                $this->app->make('files')
+            );
+        });
     }
 
     /**
